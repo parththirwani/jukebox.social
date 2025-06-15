@@ -1,48 +1,54 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
+  output = "../app/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url = env("DATABASE_URL")
 }
 
-
 model User {
-  id        String      @id @default(uuid())
-  email     String      @unique
+  id        String              @id @default(uuid())
+  email     String              @unique
   password  String
   provider  Provider
   streams   Stream[]
-  upvotes   Upvote[]
+  votes     Vote[]
 }
 
-enum Provider{
+enum Provider {
   Google
 }
 
 model Stream {
-  id          String      @id @default(uuid())
-  type        StreamType
-  active      Boolean     @default(true)
-  url         String
-  extractedId String
-  upvotes     Upvote[]
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
+  id            String            @id @default(uuid())
+  type          StreamType
+  active        Boolean           @default(true)
+  url           String
+  extractedId   String
+  votes         Vote[]
+  userId        String
+  user          User              @relation(fields: [userId], references: [id])
 }
 
-enum StreamType{
+enum StreamType {
   Spotify
   Youtube
 }
 
-model Upvote{
-  id          String     @id @default(uuid())
-  userId      String
-  StreamId    String
-  user        User       @relation(fields: [userId], references: [id])
-  stream      Stream     @relation(fields: [StreamId], references: [id])
-  @@unique([userId,StreamId])
+model Vote {
+  id              String          @id @default(uuid())
+  userId          String
+  streamId        String
+  voteType        VoteType
+  createdAt       DateTime        @default(now())
+  user            User            @relation(fields: [userId], references: [id])
+  stream          Stream          @relation(fields: [streamId], references: [id])
+  @@unique([userId, streamId])
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
 }
