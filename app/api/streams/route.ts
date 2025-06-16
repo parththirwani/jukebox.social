@@ -13,11 +13,58 @@ import { prismaClient } from "@/app/lib/db";
 import { SPOTIFY_REGEX, YT_REGEX } from "@/app/regex";
 import { getServerSession } from "next-auth";
 import { Prisma } from "@/app/generated/prisma";
+import { authOptions } from "../auth/[...nextauth]/route";
+
+// Use CommonJS require - ES6 import returns undefined
+const youtubesearchapi = require("youtube-search-api");
+
+// Helper function to safely get video details
+async function getYouTubeVideoDetails(videoId: string): Promise<VideoDetails | null> {
+  try {
+    const details = await youtubesearchapi.GetVideoDetails(videoId);
+    return details;
+  } catch (error) {
+    console.error("Error fetching YouTube video details:", error);
+    return null;
+  }
+}
+
+// Helper function to extract thumbnails (last two from thumbnail.thumbnails array)
+function extractThumbnails(thumbnailData: any): { bigThumbnail: string | null, smallThumbnail: string | null } {
+  // Check if thumbnail.thumbnails exists and is an array
+  if (!thumbnailData || !thumbnailData.thumbnails || !Array.isArray(thumbnailData.thumbnails) || thumbnailData.thumbnails.length === 0) {
+    return { bigThumbnail: null, smallThumbnail: null };
+  }
+
+  const thumbnails = thumbnailData.thumbnails;
+  const length = thumbnails.length;
+
+  // Get the last thumbnail (biggest) and second last (smaller)
+  const bigThumbnail = length > 0 ? thumbnails[length - 1]?.url || null : null;
+  const smallThumbnail = length > 1 ? thumbnails[length - 2]?.url || null : null;
+
+  return { bigThumbnail, smallThumbnail };
+}
+
+// YouTube API types (based on the types you provided)
+interface VideoDetails {
+  id: string;
+  title: string;
+  thumbnail: any;
+  isLive: boolean;
+  channel: string;
+  channelId: string;
+  description: string;
+  keywords: string[];
+  suggestion: any[];
+}
 
 // Define proper types for our API responses
 export async function POST(req: NextRequest): Promise<NextResponse<CreateStreamResponse | ErrorResponse>> {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
+    console.log("Stream API - Session:", session);    
+
     
     if (!session?.user?.id) {
       return NextResponse.json({
@@ -43,7 +90,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateStreamR
     }
     
     let extractedId: string;
-    let type: StreamType; // Use Prisma enum type
+    let type: StreamType;
+    let videoDetails: VideoDetails | null = null;
+    let title: string | null = null;
+    let bigThumbnail: string | null = null;
+    let smallThumbnail: string | null = null;
     
     if (isYt) {
       if (data.url.includes("youtu.be/")) {
@@ -54,6 +105,19 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateStreamR
         throw new Error("Invalid YouTube URL format");
       }
       type = "Youtube";
+      
+      // Try to get video details using the helper function
+      videoDetails = await getYouTubeVideoDetails(extractedId);
+      if (videoDetails) {
+        title = videoDetails.title || null;
+        
+        // Extract thumbnails
+        const thumbnails = extractThumbnails(videoDetails.thumbnail);
+        bigThumbnail = thumbnails.bigThumbnail;
+        smallThumbnail = thumbnails.smallThumbnail;
+        
+      }
+      
     } else if (isSpotify) {
       const match = data.url.match(/spotify\.com\/track\/([a-zA-Z0-9]{22})/);
       if (match) {
@@ -89,7 +153,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateStreamR
         userId: creatorId, 
         url: data.url,
         extractedId,
-        type
+        type,
+        title,
+        bigThumbnail,
+        smallThumbnail
       },
       include: {
         user: {
@@ -108,6 +175,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateStreamR
         extractedId: newStream.extractedId,
         type: newStream.type,
         url: newStream.url,
+        title: newStream.title,
+        bigThumbnail: newStream.bigThumbnail,
+        smallThumbnail: newStream.smallThumbnail,
         creator: newStream.user
       }
     }, {
@@ -189,6 +259,9 @@ export async function GET(req: NextRequest): Promise<NextResponse<GetStreamsResp
         active: stream.active,
         url: stream.url,
         extractedId: stream.extractedId,
+        title: stream.title,
+        bigThumbnail: stream.bigThumbnail,
+        smallThumbnail: stream.smallThumbnail,
         creator: stream.user,
         votes: {
           upvoteCount,

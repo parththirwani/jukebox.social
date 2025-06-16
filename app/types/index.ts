@@ -67,6 +67,9 @@ export type StreamResponse = {
   active: boolean;
   url: string;
   extractedId: string;
+  bigThumbnail: string | null,
+  smallThumbnail: string | null,
+  title: string | null,
   creator: {
     id: string;
     email: string;
