@@ -1,15 +1,17 @@
 // /api/streams/[streamId]/votes/route.ts
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prismaClient } from "@/app/lib/db";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
+
 // GET - Get vote count (net score)
 export async function GET(
   req: NextRequest,
-  { params }: { params: { streamId: string } }
+  { params }: { params: Promise<{ streamId: string }> }
 ) {
   try {
-    const streamId = params.streamId;
+    const { streamId } = await params;
 
     const stream = await prismaClient.stream.findFirst({
       where: { id: streamId }
@@ -56,18 +58,19 @@ export async function GET(
 // POST - Add or update vote
 export async function POST(
   req: NextRequest,
-  { params }: { params: { streamId: string } }
+  { params }: { params: Promise<{ streamId: string }> }
 ) {
-  const session = await getServerSession();
+  // Fix: Pass authOptions to getServerSession
+  const session = await getServerSession(authOptions);
   
   if (!session?.user?.id) {
     return NextResponse.json({
-      message: "Unauthenticated"
-    }, { status: 403 });
+      message: "Authentication required. Please log in to vote."
+    }, { status: 401 }); // Changed to 401 for consistency
   }
 
   const userId = session.user.id;
-  const streamId = params.streamId;
+  const { streamId } = await params;
   
   try {
     const body = await req.json();
@@ -163,18 +166,19 @@ export async function POST(
 // DELETE - Remove vote  
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { streamId: string } }
+  { params }: { params: Promise<{ streamId: string }> }
 ) {
-  const session = await getServerSession();
+  // Fix: Pass authOptions to getServerSession
+  const session = await getServerSession(authOptions);
   
   if (!session?.user?.id) {
     return NextResponse.json({
-      message: "Unauthenticated"
-    }, { status: 403 });
+      message: "Authentication required. Please log in to remove vote."
+    }, { status: 401 }); // Changed to 401 for consistency
   }
 
   const userId = session.user.id;
-  const streamId = params.streamId;
+  const { streamId } = await params;
 
   try {
     // Check if stream exists
