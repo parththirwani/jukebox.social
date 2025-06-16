@@ -1,5 +1,13 @@
-import { PrismaClient } from "@prisma/client/extension";
+// app/lib/db.ts
+import { PrismaClient } from "../generated/prisma"; 
 
-export const prismaClient = new PrismaClient();
+const globalForPrisma = globalThis as unknown as {
+  prismaClient: PrismaClient | undefined;
+};
 
-//TODO: introduce a singleton here
+export const prismaClient =
+  globalForPrisma.prismaClient ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prismaClient = prismaClient;
+}
