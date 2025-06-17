@@ -1,11 +1,11 @@
 "use client"
 
 import React, { useState } from 'react';
-import { VideoInput } from '@/app/components/dashboard/VideoInput';
-import { VideoPlayer } from '@/app/components/dashboard/VideoPlayer';
-import { QueueList } from '@/app/components/dashboard/QueueList';
-import { mockQueue } from '../components/dashboard/mock-data';
-import { Song, UserVotes } from '../components/dashboard/types';
+import { VideoInput } from '@/app/components/Stream-music/VideoInput';
+import { VideoPlayer } from '@/app/components/Stream-music/VideoPlayer';
+import { QueueList } from '@/app/components/Stream-music/QueueList';
+import { mockQueue } from '../components/Stream-music/mock-data';
+import { Song, UserVotes } from '../components/Stream-music/types';
 
 
 const DashboardPage: React.FC = () => {
