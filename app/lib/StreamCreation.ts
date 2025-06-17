@@ -78,6 +78,7 @@ export function extractSpotifyId(url: string): string {
 export async function getYouTubeVideoDetails(videoId: string): Promise<VideoDetails | null> {
   try {
     const details = await youtubesearchapi.GetVideoDetails(videoId);
+    console.log(details)
     return details;
   } catch (error) {
     console.error("Error fetching YouTube video details:", error);
