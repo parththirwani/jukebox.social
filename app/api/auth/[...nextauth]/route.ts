@@ -15,13 +15,13 @@ const authOptions: NextAuthOptions = {
       console.log("User:", user);
       console.log("Account:", account);
       console.log("Profile:", profile);
-      
+
       if (account?.provider === "google") {
         // Check if user exists, if not create them
         const existingUser = await prismaClient.user.findUnique({
           where: { email: user.email! }
         });
-        
+
         if (!existingUser) {
           await prismaClient.user.create({
             data: {
@@ -36,42 +36,49 @@ const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    
-    async jwt({ token, user }) {
+
+    async jwt({ token, user, account}) {
       console.log("=== JWT CALLBACK ===");
       console.log("JWT Token (before):", token);
       console.log("User object:", user);
-      
+
+      if (account) {
+        token.accessToken = account.access_token; 
+      }
+
       if (user) {
         // Find user in database and add ID to token
         const dbUser = await prismaClient.user.findUnique({
           where: { email: user.email! }
         });
-        
+
         if (dbUser) {
           token.id = dbUser.id;
           console.log("Added user ID to token:", dbUser.id);
         }
       }
-      
+
       console.log("JWT Token (after):", token);
       return token;
     },
-    
-    async session({ session, token }) {
-      console.log("=== SESSION CALLBACK ===");
-      console.log("Session (before):", session);
-      console.log("Token:", token);
-      
-      // Add user ID to session
-      if (token.id) {
-        session.user.id = token.id as string;
-        console.log("Added user ID to session:", token.id);
-      }
-      
-      console.log("Session (after):", session);
-      return session;
-    },
+
+async session({ session, token }) {
+  console.log("=== SESSION CALLBACK ===");
+  console.log("Session (before):", session);
+  console.log("Token:", token);
+
+  if (token.id) {
+    session.user.id = token.id as string;
+  }
+
+  if (token.accessToken) {
+    session.accessToken = token.accessToken as string; 
+  }
+
+  console.log("Session (after):", session);
+  return session;
+}
+
   },
 }
 

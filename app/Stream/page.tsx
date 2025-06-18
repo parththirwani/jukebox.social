@@ -1,17 +1,36 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { VideoInput } from '@/app/components/Stream-music/VideoInput';
 import { VideoPlayer } from '@/app/components/Stream-music/VideoPlayer';
 import { QueueList } from '@/app/components/Stream-music/QueueList';
 import { mockQueue } from '../components/Stream-music/mock-data';
 import { Song, UserVotes } from '../components/Stream-music/types';
+import axios from 'axios';
+import { useSession } from 'next-auth/react';
 
+const REFRESH_INTERVAL_MS= 10*1000;
 
-const DashboardPage: React.FC = () => {
+const StreamsPage: React.FC = () => {
   const [queue, setQueue] = useState<Song[]>(mockQueue);
   const [currentSong, setCurrentSong] = useState<Song | null>(mockQueue[0]);
   const [userVotes, setUserVotes] = useState<UserVotes>({});
+
+async function refreshStreams() {
+  const response = await axios.get("/api/streams");
+  console.log("Reponse returneed by fe is",response.data.streams)
+}
+
+useEffect(() => {
+  refreshStreams();
+
+  const interval = setInterval(() => {
+    refreshStreams(); 
+  }, REFRESH_INTERVAL_MS);
+
+  return () => clearInterval(interval);
+}, []);
+
 
   const extractVideoId = (url: string): string | null => {
     const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/;
@@ -113,4 +132,4 @@ const DashboardPage: React.FC = () => {
   );
 };
 
-export default DashboardPage;
+export default StreamsPage;

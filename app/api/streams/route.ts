@@ -68,7 +68,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateStreamR
 
 export async function GET(req: NextRequest): Promise<NextResponse<GetStreamsResponse | ErrorResponse>> {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
       return NextResponse.json({
