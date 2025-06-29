@@ -1,3 +1,5 @@
+Jukebox.social is a collaborative music player where friends drop tracks, vote, and shape the playlist together in real time.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
